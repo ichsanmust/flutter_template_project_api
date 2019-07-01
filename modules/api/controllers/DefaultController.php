@@ -5,9 +5,13 @@ namespace app\modules\api\controllers;
 use Yii;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
+use yii\web\ForbiddenHttpException;
+use yii\web\NotFoundHttpException;
 use app\models\SignupForm;
 use app\models\LoginForm;
-use yii\web\ForbiddenHttpException;
+use app\models\MobileSession;
+use app\models\Student;
+use app\models\StudentSearch;
 
 /**
  * Default controller for the `api` module
@@ -21,22 +25,26 @@ class DefaultController extends Controller {
                 'actions' => [
                     'sign-up' => ['POST'],
                     'login' => ['POST'],
+                    'list-student' => ['GET', 'HEAD'],
+                    'update-student' => ['PUT', 'PATCH'],
+                    'delete-student' => ['DELETE'],
+                    'view-student' => ['GET', 'HEAD'],
                 ],
             ],
         ];
     }
 
-    /**
-     * Renders the index view for the module
-     * @return string
-     */
     public function actionIndex() {
         \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
         return array('info' => 'Flutter Template Project API');
     }
 
+    private function getApplicationMobileToken() {
+        return 'asfafasfdsajeej89sadfasjfbwasfsagipPajjqwidbQBiadq';
+    }
+
     public function actionCheckAccessMain($headers) {
-        if ($headers['app_mobile_token'] != 'asfafasfdsajeej89sadfasjfbwasfsagipPajjqwidbQBiadq') {
+        if ($headers['app_mobile_token'] != $this->getApplicationMobileToken()) {
             throw new ForbiddenHttpException('Application Mobile Token Not Valid');
         }
     }
@@ -59,14 +67,13 @@ class DefaultController extends Controller {
             return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
         }
     }
-    
-    public function actionLogin()
-    {
-        
+
+    public function actionLogin() {
+
         \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
         $this->actionCheckAccessMain(yii::$app->request->headers);
-        
-        
+
+
         try {
             $model = new LoginForm(['scenario' => 'apiLoginScenario']);
             $model->attributes = \yii::$app->request->post();
@@ -80,20 +87,130 @@ class DefaultController extends Controller {
             //echo 'Message: ' . $e->getMessage();
             return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
         }
+    }
+
+    public function actionCheckAccessRequest($headers) {
+        \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
+        $this->actionCheckAccessMain($headers);
+
+        $user_mobile_token = $headers['user_mobile_token'];
+        $session = MobileSession::find()->select([
+                    "auth_key"
+                ])
+                ->where("auth_key = '" . $user_mobile_token . "' AND status = 1 AND valid_date_time >= NOW()")
+                ->asArray()
+                ->one();
+
+        if (!$session) {
+            throw new ForbiddenHttpException('User Mobile Token Not Valid');
+        }
+    }
+
+    public function actionListStudent() {
+        \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
+        $this->actionCheckAccessRequest(yii::$app->request->headers);
+        $params = Yii::$app->request->queryParams;
+        $pageSize = (isset($params['per-page'])) ? $params['per-page'] : 10;
+        try {
+            $searchModel = new StudentSearch();
+            $dataProvider = $searchModel->search($params, $pageSize);
+            if ($pageSize == false) {
+                $dataProvider->pagination = false;
+            }
+            $returnArray = array(
+                'total_item' => $dataProvider->getTotalCount(),
+                'per_page' => ($pageSize != 'false' ) ? (int) $pageSize : $pageSize,
+                'data' => $dataProvider->getModels(),
+            );
+            return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success get data', 'data' => $returnArray);
+        } catch (Exception $e) {
+            //echo 'Message: ' . $e->getMessage();
+            return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
+        }
+    }
+
+    public function actionCreateStudent() {
+
+        \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
+        $this->actionCheckAccessRequest(yii::$app->request->headers);
+
+        try {
+            $model = new Student(['scenario' => 'create']);
+            $model->attributes = \yii::$app->request->post();
+            if ($model->validate()) {
+                $model->save();
+                return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success create student', 'data' => $model);
+            } else {
+                return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => 'failed create student', 'data' => $model->getErrors());
+            }
+        } catch (Exception $e) {
+            //echo 'Message: ' . $e->getMessage();
+            return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
+        }
+
+    }
+
+    public function actionUpdateStudent($id) {
+
+        \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
+        $this->actionCheckAccessRequest(yii::$app->request->headers);
+
+         try {
+            $model = $this->findModelStudent($id);
+            $model->attributes = \yii::$app->request->post();
+            if ($model->validate()) {
+                $model->save();
+                return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success update student', 'data' => $model);
+            } else {
+                return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => 'failed update student', 'data' => $model->getErrors());
+            }
+        } catch (Exception $e) {
+            //echo 'Message: ' . $e->getMessage();
+            return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
+        }
         
-        if (!Yii::$app->user->isGuest) {
-            return $this->goHome();
+    }
+    
+    public function actionDeleteStudent($id)
+    {
+        
+        \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
+        $this->actionCheckAccessRequest(yii::$app->request->headers);
+        
+        try {
+            $model = $this->findModelStudent($id);
+            $model->delete();
+            return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success delete student', 'data' => $model);
+        } catch (Exception $e) {
+            //echo 'Message: ' . $e->getMessage();
+            return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
+        }
+    }
+    
+    
+    public function actionViewStudent($id)
+    {
+        
+        \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
+        $this->actionCheckAccessRequest(yii::$app->request->headers);
+        
+        try {
+            $model = $this->findModelStudent($id);
+            return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success view student', 'data' => $model);
+        } catch (Exception $e) {
+            //echo 'Message: ' . $e->getMessage();
+            return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
+        }
+    }
+    
+    
+    protected function findModelStudent($id)
+    {
+        if (($model = Student::findOne($id)) !== null) {
+            return $model;
         }
 
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
-        }
-
-        $model->password = '';
-        return $this->render('login', [
-            'model' => $model,
-        ]);
+        throw new NotFoundHttpException('Data Student does not exist.');
     }
 
 }
