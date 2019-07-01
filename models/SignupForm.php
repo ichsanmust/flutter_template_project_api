@@ -14,6 +14,8 @@ class SignupForm extends Model
     public $full_name;
     public $email;
     public $password;
+    public $password_confirm;
+    
 
     /**
      * @inheritdoc
@@ -36,8 +38,10 @@ class SignupForm extends Model
             ['email', 'unique', 'targetClass' => '\app\models\User', 'message' => 'This email address has already been taken.'],
             
             
-            ['password', 'required'],
-            ['password', 'string', 'min' => 6],
+            [['password', 'password_confirm'], 'required'],
+            [['password', 'password_confirm'], 'string', 'min' => 6],
+            [['password_confirm'], 'compare', 'compareAttribute' => 'password'],	
+            
         ];
     }
 

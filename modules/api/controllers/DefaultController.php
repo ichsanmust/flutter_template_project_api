@@ -9,6 +9,7 @@ use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use app\models\SignupForm;
 use app\models\LoginForm;
+use app\models\ChangePassword;
 use app\models\MobileSession;
 use app\models\Student;
 use app\models\StudentSearch;
@@ -25,6 +26,8 @@ class DefaultController extends Controller {
                 'actions' => [
                     'sign-up' => ['POST'],
                     'login' => ['POST'],
+                    'logout' => ['POST'],
+                    'change-password' => ['POST'],
                     'list-student' => ['GET', 'HEAD'],
                     'update-student' => ['PUT', 'PATCH'],
                     'delete-student' => ['DELETE'],
@@ -82,6 +85,53 @@ class DefaultController extends Controller {
                 return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success login', 'data' => $user);
             } else {
                 return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => 'failed login', 'data' => $model->getErrors());
+            }
+        } catch (Exception $e) {
+            //echo 'Message: ' . $e->getMessage();
+            return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
+        }
+    }
+    
+    
+     public function actionLogout() {
+        \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
+        $this->actionCheckAccessMain(yii::$app->request->headers);
+
+
+        try {
+            $postData = \yii::$app->request->post();
+            $auth_key = (isset($postData['auth_key'])) ? $postData['auth_key'] : '' ;
+            if ($auth_key != '') {
+                $this->deleteSessionMobile($auth_key);
+                return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success logout', 'data' => array());
+            } else {
+                return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => 'failed logout', 'data' => array());
+            }
+        } catch (Exception $e) {
+            //echo 'Message: ' . $e->getMessage();
+            return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
+        }
+    }
+    
+    private function deleteSessionMobile($auth_key) {
+        MobileSession::updateAll(['status' => 0], ['=', 'auth_key', $auth_key]);
+    }
+    
+    
+    public function actionChangePassword() {
+
+        \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
+        $this->actionCheckAccessMain(yii::$app->request->headers);
+
+
+        try {
+            $model = new ChangePassword(['scenario' => 'apiChangePasswordScenario']);
+            $model->attributes = \yii::$app->request->post();
+            if ($model->validate()) {
+                $user = $model->changePassword();
+                return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success change password', 'data' => $user);
+            } else {
+                return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => 'failed change password', 'data' => $model->getErrors());
             }
         } catch (Exception $e) {
             //echo 'Message: ' . $e->getMessage();
