@@ -160,17 +160,43 @@ class DefaultController extends Controller {
         \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
         $this->actionCheckAccessRequest(yii::$app->request->headers);
         $params = Yii::$app->request->queryParams;
+
         $pageSize = (isset($params['per-page'])) ? $params['per-page'] : 10;
+        if ($pageSize == 'true') {
+            $pageSize = 10;
+        } else if ($pageSize == 'false') {
+            $pageSize = (0 == 1); // false
+        }
+
+        $page = (isset($params['page'])) ? $params['page'] : 1;
+
         try {
             $searchModel = new StudentSearch();
             $dataProvider = $searchModel->search($params, $pageSize);
+            $total_item = $dataProvider->getTotalCount();
+            
+            $countPage = 1;
+            if ($total_item > 0 && $pageSize != false) {
+                $countPage = ceil($total_item / $pageSize);
+            }
+            
             if ($pageSize == false) {
                 $dataProvider->pagination = false;
+                $countPage = 1;
             }
+
+            if ($page <= $countPage) {
+                $data = $dataProvider->getModels();
+            } else {
+                $data = array();
+            }
+            
             $returnArray = array(
-                'total_item' => $dataProvider->getTotalCount(),
-                'per_page' => ($pageSize != 'false' ) ? (int) $pageSize : $pageSize,
-                'data' => $dataProvider->getModels(),
+                'total_item' => $total_item,
+                'count_page' => $countPage,
+                'page' => ($pageSize != false ) ? (int) $page : false,
+                'per_page' => ($pageSize != false ) ? (int) $pageSize : $pageSize,
+                'data' => $data,
             );
             return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success get data', 'data' => $returnArray);
         } catch (Exception $e) {
@@ -197,7 +223,6 @@ class DefaultController extends Controller {
             //echo 'Message: ' . $e->getMessage();
             return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
         }
-
     }
 
     public function actionUpdateStudent($id) {
