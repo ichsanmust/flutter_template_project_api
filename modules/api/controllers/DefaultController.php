@@ -152,7 +152,7 @@ class DefaultController extends Controller {
                 ->one();
 
         if (!$session) {
-            throw new ForbiddenHttpException('User Mobile Token Not Valid');
+            throw new ForbiddenHttpException('User Mobile Token Not Valid, maybe is expired, please login again');
         }
     }
 
