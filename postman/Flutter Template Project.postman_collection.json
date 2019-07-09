@@ -11,7 +11,8 @@
 		"2ea37f0f-669a-9344-892a-964cac654183",
 		"c4eeabe4-a0a4-e017-8bf8-4aa6b7022c75",
 		"3e439efd-48f8-c274-b679-320d4415020f",
-		"51df1103-8410-1ca1-042d-8b3988246e93"
+		"51df1103-8410-1ca1-042d-8b3988246e93",
+		"076fee2e-40f5-6d08-f811-9d8c204ca0d5"
 	],
 	"folders": [],
 	"folders_order": [],
@@ -19,6 +20,48 @@
 	"owner": "3899172",
 	"public": false,
 	"requests": [
+		{
+			"id": "076fee2e-40f5-6d08-f811-9d8c204ca0d5",
+			"headers": "app_mobile_token: asfafasfdsajeej89sadfasjfbwasfsagipPajjqwidbQBiadq\nuser_mobile_token: N6hyM0fOfUMsZaFhvuqOoCE0h7nX3tT5\n",
+			"headerData": [
+				{
+					"key": "app_mobile_token",
+					"value": "asfafasfdsajeej89sadfasjfbwasfsagipPajjqwidbQBiadq",
+					"description": "",
+					"enabled": true
+				},
+				{
+					"key": "user_mobile_token",
+					"value": "N6hyM0fOfUMsZaFhvuqOoCE0h7nX3tT5",
+					"description": "",
+					"enabled": true
+				}
+			],
+			"url": "http://localhost/flutter_template_project_api/web/index.php?r=api/default/check-session",
+			"queryParams": [
+				{
+					"key": "r",
+					"value": "api/default/check-session",
+					"equals": true,
+					"description": "",
+					"enabled": true
+				}
+			],
+			"preRequestScript": null,
+			"pathVariables": {},
+			"pathVariableData": [],
+			"method": "GET",
+			"data": null,
+			"dataMode": "params",
+			"tests": null,
+			"currentHelper": "normal",
+			"helperAttributes": {},
+			"time": 1562685028569,
+			"name": "Check Session",
+			"description": "",
+			"collectionId": "56ec8a56-ed36-0ce9-4448-e972924ffd9f",
+			"responses": []
+		},
 		{
 			"id": "2ea37f0f-669a-9344-892a-964cac654183",
 			"headers": "app_mobile_token: asfafasfdsajeej89sadfasjfbwasfsagipPajjqwidbQBiadq\nuser_mobile_token: SOM7j4NqekqBNWq405Ml_lk5SK0lxQBy\n",
@@ -117,7 +160,7 @@
 				},
 				{
 					"key": "password",
-					"value": "TestUser111",
+					"value": "Test",
 					"description": "",
 					"type": "text",
 					"enabled": true
@@ -141,7 +184,7 @@
 			"tests": null,
 			"currentHelper": "normal",
 			"helperAttributes": {},
-			"time": 1561965197994,
+			"time": 1562128217245,
 			"name": "Login",
 			"description": "Login Api",
 			"collectionId": "56ec8a56-ed36-0ce9-4448-e972924ffd9f",

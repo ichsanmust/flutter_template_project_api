@@ -26,6 +26,7 @@ class DefaultController extends Controller {
                 'actions' => [
                     'sign-up' => ['POST'],
                     'login' => ['POST'],
+                    'check-session' => ['GET'],
                     'logout' => ['POST'],
                     'change-password' => ['POST'],
                     'list-student' => ['GET', 'HEAD'],
@@ -91,16 +92,15 @@ class DefaultController extends Controller {
             return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
         }
     }
-    
-    
-     public function actionLogout() {
+
+    public function actionLogout() {
         \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
         $this->actionCheckAccessMain(yii::$app->request->headers);
 
 
         try {
             $postData = \yii::$app->request->post();
-            $auth_key = (isset($postData['auth_key'])) ? $postData['auth_key'] : '' ;
+            $auth_key = (isset($postData['auth_key'])) ? $postData['auth_key'] : '';
             if ($auth_key != '') {
                 $this->deleteSessionMobile($auth_key);
                 return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success logout', 'data' => array());
@@ -112,12 +112,11 @@ class DefaultController extends Controller {
             return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
         }
     }
-    
+
     private function deleteSessionMobile($auth_key) {
         MobileSession::updateAll(['status' => 0], ['=', 'auth_key', $auth_key]);
     }
-    
-    
+
     public function actionChangePassword() {
 
         \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
@@ -135,6 +134,28 @@ class DefaultController extends Controller {
             }
         } catch (Exception $e) {
             //echo 'Message: ' . $e->getMessage();
+            return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
+        }
+    }
+
+    public function actionCheckSession() {
+        \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
+        $headers = yii::$app->request->headers;
+        $this->actionCheckAccessMain($headers);
+        $user_mobile_token = $headers['user_mobile_token'];
+        $session = MobileSession::find()->select([
+                    "auth_key"
+                ])
+                ->where("auth_key = '" . $user_mobile_token . "' AND status = 1 AND valid_date_time >= NOW()")
+                ->asArray()
+                ->one();
+        try {
+            if ($session) {
+                return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'User Token Valid', 'data' => array());
+            } else {
+                return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => 'User Mobile Token Not Validd', 'data' => array());
+            }
+        } catch (Exception $e) {
             return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
         }
     }
@@ -174,12 +195,12 @@ class DefaultController extends Controller {
             $searchModel = new StudentSearch();
             $dataProvider = $searchModel->search($params, $pageSize);
             $total_item = $dataProvider->getTotalCount();
-            
+
             $countPage = 1;
             if ($total_item > 0 && $pageSize != false) {
                 $countPage = ceil($total_item / $pageSize);
             }
-            
+
             if ($pageSize == false) {
                 $dataProvider->pagination = false;
                 $countPage = 1;
@@ -190,7 +211,7 @@ class DefaultController extends Controller {
             } else {
                 $data = array();
             }
-            
+
             $returnArray = array(
                 'total_item' => $total_item,
                 'count_page' => $countPage,
@@ -230,7 +251,7 @@ class DefaultController extends Controller {
         \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
         $this->actionCheckAccessRequest(yii::$app->request->headers);
 
-         try {
+        try {
             $model = $this->findModelStudent($id);
             $model->attributes = \yii::$app->request->post();
             if ($model->validate()) {
@@ -243,15 +264,13 @@ class DefaultController extends Controller {
             //echo 'Message: ' . $e->getMessage();
             return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
         }
-        
     }
-    
-    public function actionDeleteStudent($id)
-    {
-        
+
+    public function actionDeleteStudent($id) {
+
         \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
         $this->actionCheckAccessRequest(yii::$app->request->headers);
-        
+
         try {
             $model = $this->findModelStudent($id);
             $model->delete();
@@ -261,14 +280,12 @@ class DefaultController extends Controller {
             return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
         }
     }
-    
-    
-    public function actionViewStudent($id)
-    {
-        
+
+    public function actionViewStudent($id) {
+
         \Yii::$app->response->format = \yii\web\Response:: FORMAT_JSON;
         $this->actionCheckAccessRequest(yii::$app->request->headers);
-        
+
         try {
             $model = $this->findModelStudent($id);
             return array('status' => true, 'code' => Yii::$app->response->statusCode, 'message' => 'success view student', 'data' => $model);
@@ -277,10 +294,8 @@ class DefaultController extends Controller {
             return array('status' => false, 'code' => Yii::$app->response->statusCode, 'message' => $e->getMessage(), 'data' => array());
         }
     }
-    
-    
-    protected function findModelStudent($id)
-    {
+
+    protected function findModelStudent($id) {
         if (($model = Student::findOne($id)) !== null) {
             return $model;
         }
